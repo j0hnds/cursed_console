@@ -1,6 +1,11 @@
 = cursed_console
 
-Description goes here.
+This is a generic curses-based console application that supports pluggable functionality.
+
+I have the idea in my head, but it is not completed yet (or - if you look at the repository) 
+barely started.
+
+Stay tuned.
 
 == Contributing to cursed_console
  
