@@ -52,3 +52,6 @@ pkg
 # For RVM
 .ruby-version
 .ruby-gemset
+
+# General app stuff
+log.txt

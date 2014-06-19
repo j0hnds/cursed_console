@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+require 'cursed_console'
+require 'cursed_console/options'
+
+options = CursedConsole::Options.new.parse_options!
+plugin_manager = CursedConsole::PluginManager.new(options[:plugin_path])
+web_service_client = CursedConsole::WebServiceClient.new(options[:server],
+                                                         options[:use_ssl],
+                                                         options[:api_token])
+plugin_manager.load_plugins
+
+begin
+  Curses::noecho
+  Curses::init_screen
+  Curses::crmode
+  Curses::nonl
+  Curses::start_color
+  Curses::stdscr.keypad(true)
+  Curses::curs_set(0)
+
+  main_window = CursedConsole::MainWindow.new(plugin_manager, web_service_client)
+  main_window.main_loop
+ensure
+  Curses::close_screen
+end

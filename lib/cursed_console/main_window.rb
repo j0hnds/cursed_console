@@ -1,0 +1,110 @@
+module CursedConsole
+
+  class MainWindow < Curses::Window
+
+    QUIT_MENU_ITEM = 'Quit'
+
+    attr_reader :menu_list, :plugin_manager, :web_service_client
+    attr_accessor :current_position
+
+    def initialize(plugin_manager, web_service_client)
+      super(0, 0, 0, 0)
+      @current_position = -1
+      @plugin_manager = plugin_manager
+      @web_service_client = web_service_client
+      @menu_list = @plugin_manager.sub_paths
+      Curses::curs_set(0)
+      keypad(true)
+      render_menu
+      # write_status_message
+    end
+
+    def main_loop
+      while ch = getch
+        case ch
+        when Curses::Key::RIGHT
+          self.current_position += 1
+        when Curses::Key::LEFT
+          self.current_position -= 1
+        when 13, Curses::Key::ENTER
+          return current_position if current_position == menu_list.size
+          submenu_select = render_sub_menu(current_position)
+          if submenu_select.first >= 0
+            return [ current_position ] + submenu_select
+          end
+        else
+          next if ch.is_a?(Fixnum)
+          mlist = menu_list + [ QUIT_MENU_ITEM ]
+          selected_item = mlist.detect { |item| item.downcase.start_with?(ch.downcase) }
+          self.current_position = mlist.index(selected_item) unless selected_item.nil?
+        end
+        self.current_position = 0 if current_position < 0
+        self.current_position = menu_list.size if current_position > menu_list.size
+        render_menu(self.current_position)
+        update_status_bar
+      end
+    end
+
+    def render_menu(item_selected=-1)
+      setpos(0, 1)
+
+      (menu_list + [ QUIT_MENU_ITEM ]).map { | i | i.capitalize }.each_with_index do | item, index |
+        addstr(" ") if index > 0
+        first_char = item.slice(0, 1)
+        remainder = item.slice(1..-1)
+        attron(Curses::A_STANDOUT) if index == item_selected
+        attron(Curses::A_UNDERLINE)
+        addstr(first_char)
+        attroff(Curses::A_UNDERLINE)
+        addstr(remainder)
+        attroff(Curses::A_STANDOUT) if index == item_selected
+      end
+    end
+    
+    def update_status_bar
+      # write_status_message(menu_list[menu_list[current_position]]) unless current_position < 0
+    end
+
+    def write_status_message(message=nil, offset=0)
+      # Clear the status line
+      # %x{ echo "Line: #{lines - 1}, Message: #{message}" >> log.txt}
+      setpos(lines - 1, 0)
+      attron(A_STANDOUT)
+      addstr(" " * cols)
+      attroff(A_STANDOUT)
+
+      if ! message.nil?
+        setpos(lines - 1, 1)
+        attron(A_STANDOUT)
+        addstr(message)
+        attroff(A_STANDOUT)
+      end
+    end
+
+    def position_for_submenu(selected_menu_item)
+      pos = 2
+      plugin_manager.sub_paths.each_with_index do | item, index |
+        break if selected_menu_item >= index
+        pos += (item.length + 1)
+      end
+      pos
+    end
+
+    def render_sub_menu(position)
+      sub_path = plugin_manager.sub_paths[position]
+      plugins = plugin_manager.plugins_for(sub_path)
+      submenu = DropDownMenu.new(plugins,
+                                 sub_path,
+                                 plugin_manager,
+                                 1, 
+                                 position_for_submenu(position), 
+                                 self)
+      submenu.select_menu_item.tap do | selection |
+        submenu.clear
+        submenu.refresh
+        submenu.close
+      end
+    end
+  end
+
+end

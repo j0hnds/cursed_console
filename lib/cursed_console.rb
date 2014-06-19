@@ -1,0 +1,10 @@
+require 'curses'
+require 'active_support'
+require 'active_support/core_ext/object'
+require 'base64'
+require 'cursed_console/plugin_manager'
+require 'cursed_console/web_service_client'
+require 'cursed_console/main_window'
+require 'cursed_console/drop_down_menu'
+require 'cursed_console/base_resource'
+
