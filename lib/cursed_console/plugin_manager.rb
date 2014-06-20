@@ -16,6 +16,10 @@ module CursedConsole
       "Plugins::#{sub_path.capitalize}::#{plugin_name.capitalize}".constantize.instance_methods(false)
     end
 
+    def instantiate_plugin(sub_path, plugin_name)
+      "Plugins::#{sub_path.capitalize}::#{plugin_name.capitalize}".constantize.new
+    end
+
     def ruby_modules
       @ruby_modules ||= Dir.glob(File.join(plugin_path, "**/*.rb"))
     end

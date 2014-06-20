@@ -29,8 +29,12 @@ module CursedConsole
         when 13, Curses::Key::ENTER
           return current_position if current_position == menu_list.size
           submenu_select = render_sub_menu(current_position)
-          if submenu_select.first >= 0
-            return [ current_position ] + submenu_select
+          if submenu_select.present?
+            # This is where we should invoke the form
+            invoke_action(plugin_manager.sub_paths[current_position], 
+                          submenu_select.first, 
+                          submenu_select.last)
+            # return [ current_position ] + submenu_select
           end
         else
           next if ch.is_a?(Fixnum)
@@ -105,6 +109,14 @@ module CursedConsole
         submenu.close
       end
     end
+
+    def invoke_action(sub_path, plugin, action)
+      # Instantiate the plugin...
+      plugin = plugin_manager.instantiate_plugin(sub_path, plugin)
+      form = PluginForm.new(plugin, action.to_sym, 20, 80, 2, 2)
+      form.handle_form(web_service_client)
+    end
+
   end
 
 end

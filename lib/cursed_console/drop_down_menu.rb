@@ -6,7 +6,13 @@ module CursedConsole
 
     attr_reader :item_list, :sub_path, :plugin_manager, :max_window_height, :status_bar
 
-    def initialize(item_list, sub_path, plugin_manager, top, left, status_bar, max_window_height=MAX_WINDOW_HEIGHT)
+    def initialize(item_list, 
+                   sub_path, 
+                   plugin_manager, 
+                   top, 
+                   left, 
+                   status_bar, 
+                   max_window_height=MAX_WINDOW_HEIGHT)
       super(item_list.size + 2 > max_window_height ? max_window_height : item_list.size + 2, 
             (item_list.is_a?(Hash) ? item_list.keys : item_list).inject(0) { |acc, item| acc = item.length if item.length > acc; acc } + 2, 
             top, 
@@ -58,15 +64,23 @@ module CursedConsole
           position += 1
         when 13, Curses::Key::ENTER
           if ! has_sub_items?
-            return [ position ]
+            if item_list.is_a?(Hash)
+              return [ item_list.keys[position] ]
+            else
+              return [ item_list[position] ]
+            end
           else
             submenu_select = render_sub_menu(position)
-            if submenu_select.first >= 0
-              return [ position ] + submenu_select
+            if submenu_select.present?
+              if item_list.is_a?(Hash)
+                return [ item_list.keys[position] ] + submenu_select
+              else
+                return [ item_list[position] ] + submenu_select
+              end
             end
           end
         when 27, Curses::Key::CANCEL
-          return [ -1 ]
+          return [  ]
         else
           next if ch.is_a?(Fixnum)
           if item_list.is_a?(Hash)
