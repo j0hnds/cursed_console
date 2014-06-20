@@ -1,8 +1,8 @@
-MAX_WINDOW_HEIGHT = 20
-
 module CursedConsole
 
   class DropDownMenu < Curses::Window
+
+    MAX_WINDOW_HEIGHT = 20
 
     attr_reader :item_list, :sub_path, :plugin_manager, :max_window_height, :status_bar
 
@@ -85,7 +85,6 @@ module CursedConsole
         # Now, to adjust the scrolling position (if necessary)
         top_line = 0 if (position + 1) < displayable_lines
         top_line = (position + 1) - displayable_lines if (position + 1) >= displayable_lines
-        %x{ echo "position=#{position}, top_line=#{top_line}, displayable_lines=#{displayable_lines}" > log.txt }
         draw_menu(position, top_line)
         update_status_bar(position)
       end
@@ -94,9 +93,9 @@ module CursedConsole
     private
 
     def update_status_bar(current_position)
-      return if status_bar.nil?
-      status_bar.write_status_message(item_list[item_list.keys[current_position]]) 
-      status_bar.refresh
+      #return if status_bar.nil?
+      #status_bar.write_status_message(item_list[item_list.keys[current_position]]) 
+      #status_bar.refresh
     end
 
     def render_sub_menu(position)
