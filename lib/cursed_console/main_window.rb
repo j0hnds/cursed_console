@@ -113,11 +113,32 @@ module CursedConsole
     def invoke_action(sub_path, plugin, action)
       # Instantiate the plugin...
       plugin = plugin_manager.instantiate_plugin(sub_path, plugin)
-      form = PluginForm.new(plugin, action.to_sym, 20, 80, 2, 2)
-      form.handle_form(web_service_client)
-      form.clear
-      form.refresh
-      form.close
+      if plugin.requires_input_for?(action.to_sym)
+        form = PluginForm.new(plugin, action.to_sym, 20, 80, 2, 2)
+        form.handle_form(web_service_client)
+        form.clear
+        form.refresh
+        form.close
+      else
+        # No input required. Don't need no stinkin' form
+        the_form = plugin.send(action.to_sym)
+        uri = the_form[:result]
+        list = plugin.send(the_form[:result_formatter], web_service_client, uri)
+        submenu = DropDownMenu.new(list, 
+                                  nil, # sub_path
+                                  nil, # plugin_manager
+                                  1,
+                                  1,
+                                  nil)
+        selected = submenu.select_menu_item.tap do | selection |
+          submenu.clear
+          submenu.refresh
+          submenu.close
+          Curses::curs_set(1)
+          # render_fields
+        end
+        refresh
+      end
     end
 
   end
