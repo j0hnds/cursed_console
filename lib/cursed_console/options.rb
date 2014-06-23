@@ -4,8 +4,12 @@ module CursedConsole
 
   class Options
 
-    DEFAULT_USE_SSL = true
-    DEFAULT_TOKEN = ENV['API_TOKEN']
+    # Use either the new token (if supplied) or the old one.
+    # Better support for legacy usage.
+    DEFAULT_TOKEN = ENV['CURSED_API_TOKEN'] || ENV['API_TOKEN']
+    DEFAULT_PLUGIN_PATH = ENV['CURSED_PLUGIN_PATH']
+    DEFAULT_SERVER = ENV['CURSED_SERVER']
+    DEFAULT_USE_SSL = ENV['CURSED_USE_SSL']
 
     def initialize(app_name="cursed_console")
       @options = {}
@@ -17,13 +21,15 @@ module CursedConsole
 
         opts.on '-h', '--help', 'Display the usage message' do
           puts opts
+          exit
         end
 
+        @options[:server] = DEFAULT_SERVER
         opts.on '-s', '--server SERVER', 'Specify the RESTful web server' do | server |
           @options[:server] = server
         end
 
-        @options[:use_ssl] = DEFAULT_USE_SSL
+        @options[:use_ssl] = DEFAULT_USE_SSL == 'true'
         opts.on '-n', '--no-ssl', 'If specified, SSL will NOT be used for the call to the server' do
           @options[:use_ssl] = false
         end 
@@ -33,6 +39,7 @@ module CursedConsole
           @options[:api_token] = token
         end
 
+        @options[:plugin_path] = DEFAULT_PLUGIN_PATH
         opts.on '-p', '--plugin-path PATH', 'The path to the plugins' do | path |
           @options[:plugin_path] = path
         end
