@@ -115,6 +115,9 @@ module CursedConsole
       plugin = plugin_manager.instantiate_plugin(sub_path, plugin)
       form = PluginForm.new(plugin, action.to_sym, 20, 80, 2, 2)
       form.handle_form(web_service_client)
+      form.clear
+      form.refresh
+      form.close
     end
 
   end
