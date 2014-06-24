@@ -17,7 +17,7 @@ module CursedConsole
       color_set(1)
       keypad(true)
       render_menu
-      # write_status_message
+      write_status_message 
     end
 
     def main_loop
@@ -71,18 +71,18 @@ module CursedConsole
     end
 
     def write_status_message(message=nil, offset=0)
-      # Clear the status line
       # %x{ echo "Line: #{lines - 1}, Message: #{message}" >> log.txt}
-      setpos(lines - 1, 0)
-      attron(A_STANDOUT)
-      addstr(" " * cols)
-      attroff(A_STANDOUT)
+      # Clear the status line
+      setpos(maxy - 1, 0)
+      attron(Curses::A_STANDOUT)
+      addstr(" " * maxx)
+      attroff(Curses::A_STANDOUT)
 
       if ! message.nil?
-        setpos(lines - 1, 1)
-        attron(A_STANDOUT)
+        setpos(maxy - 1, 1)
+        attron(Curses::A_STANDOUT)
         addstr(message)
-        attroff(A_STANDOUT)
+        attroff(Curses::A_STANDOUT)
       end
     end
 
@@ -115,7 +115,7 @@ module CursedConsole
       # Instantiate the plugin...
       plugin = plugin_manager.instantiate_plugin(sub_path, plugin)
       if plugin.requires_input_for?(action.to_sym)
-        form = PluginForm.new(plugin, action.to_sym, 20, 80, 2, 2)
+        form = PluginForm.new(plugin, action.to_sym, self, 20, 80, 2, 2)
         form.handle_form(web_service_client)
         form.clear
         form.refresh
@@ -130,7 +130,7 @@ module CursedConsole
                                   nil, # plugin_manager
                                   1,
                                   1,
-                                  nil)
+                                  self)  # status_bar
         selected = submenu.select_menu_item.tap do | selection |
           submenu.clear
           submenu.refresh

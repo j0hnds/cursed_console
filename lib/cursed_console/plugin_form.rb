@@ -2,20 +2,21 @@ module CursedConsole
 
   class PluginForm < Curses::Window
 
-    attr_accessor :resource, :action, :current_field, :the_form, :fields
+    attr_accessor :resource, :action, :current_field, :the_form, :fields, :status_bar
 
     FIELD_START_Y = 3
     LABEL_START_COL = 2
     LABEL_FIELD_GAP = 1
     BUTTON_WIDTH = 10
 
-    def initialize(resource, action, height, width, top, left)
+    def initialize(resource, action, status_bar, height, width, top, left)
       super(height, width, top, left)
       @fields = []
       @current_field = 0
       @resource = resource
       @action = action
       @the_form = @resource.send(action)
+      @status_bar = status_bar
       color_set(1)
       box('|', '-')
       keypad(true)
@@ -191,7 +192,12 @@ module CursedConsole
 
     def process_form_result(web_service_client)
       return if the_form[:result].nil?
-      uri = format_uri(the_form[:result])
+      begin
+        uri = format_uri(the_form[:result])
+      rescue StandardError => ex
+        write_status_message(ex.message)
+        return
+      end
       list = resource.send(the_form[:result_formatter], web_service_client, uri)
       submenu = DropDownMenu.new(list, 
                                 nil, # sub_path
@@ -210,6 +216,7 @@ module CursedConsole
     end
 
     def render_sub_menu(field, web_service_client)
+      %x{ echo "render_sub_menu 1" >> log.txt }
       field_config = the_form[:fields][field.name]
       if field_config[:select_list].is_a?(Array)
         list = field_config[:select_list].inject({}) do | acc, tuple |
@@ -217,9 +224,22 @@ module CursedConsole
           acc
         end
       elsif field_config[:select_list].is_a?(String)
-        uri = format_uri(field_config[:select_list])
+        %x{ echo "render_sub_menu 2" >> log.txt }
+        begin
+          uri = format_uri(field_config[:select_list])
+          %x{ echo "render_sub_menu 3: #{uri}" >> log.txt }
+        rescue StandardError => ex
+          %x{ echo "render_sub_menu 4" >> log.txt }
+          write_status_message(ex.message)
+          return []
+        end
         %x{ echo "URI to GET: #{uri}" >> log.txt }
-        list = web_service_client.get(uri)
+        begin
+          list = web_service_client.get(uri)
+        rescue Exception => ex
+          write_status_message(ex.message)
+          return []
+        end
         %x{ echo "Raw results: #{list.inspect}" >> log.txt }
         if list.is_a?(Hash)
           if list.has_key?('error')
@@ -263,6 +283,23 @@ module CursedConsole
         render_field_value(field)
       end
     end
+
+    def write_status_message(message=nil, offset=0)
+      # %x{ echo "Line: #{lines - 1}, Message: #{message}" >> log.txt}
+      # Clear the status line
+      setpos(maxy - 4, 1)
+      attron(Curses::A_STANDOUT)
+      addstr(" " * (maxx - 2))
+      attroff(Curses::A_STANDOUT)
+
+      if ! message.nil?
+        setpos(maxy - 4, 2)
+        attron(Curses::A_STANDOUT)
+        addstr(message)
+        attroff(Curses::A_STANDOUT)
+      end
+    end
+
 
   end
 
