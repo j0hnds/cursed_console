@@ -54,7 +54,8 @@ module CursedConsole
             puts "Full Error message: #{ex.message}"
             puts "\t#{ex.backtrace.join("\n\t")}"
           end
-          exit 1
+          # exit 1
+          raise "Error parsing response: #{ex.message[0..100]}"
         end
       rescue RestClient::Exception => ex
         puts "Response: #{ex.response.code} - #{ex.response.description}"
@@ -74,18 +75,18 @@ module CursedConsole
                 puts(hash.inspect)
               end
             rescue Exception => json_ex
-              puts "Unable to parse body for error: #{ex.response.http_body[0..50]}"
+              raise "Unable to parse body for error: #{ex.response.http_body[0..50]}"
             end
           end
         end
-        exit 1
+        # exit 1
       rescue SystemExit
         raise
       rescue Exception => ex
         # General unknown exception
-        puts "Error invoking RestClient: #{ex.message}"
-        puts "\t#{ex.backtrace.join("\n\t")}" if trace
-        exit 1
+        raise "Error invoking RestClient: #{ex.message}"
+        # puts "\t#{ex.backtrace.join("\n\t")}" if trace
+        # exit 1
       end
     end
 
