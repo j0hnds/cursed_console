@@ -16,6 +16,7 @@ module CursedConsole
       @resource = resource
       @action = action
       @the_form = @resource.send(action)
+      color_set(1)
       box('|', '-')
       keypad(true)
       render_form

@@ -14,6 +14,7 @@ module CursedConsole
       @web_service_client = web_service_client
       @menu_list = @plugin_manager.sub_paths
       Curses::curs_set(0)
+      color_set(1)
       keypad(true)
       render_menu
       # write_status_message

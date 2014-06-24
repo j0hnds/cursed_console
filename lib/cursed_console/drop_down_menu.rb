@@ -23,6 +23,7 @@ module CursedConsole
       @max_window_height = max_window_height
       @status_bar = status_bar
 
+      color_set(1)
       box('|', '-')
       Curses::curs_set(0)
       keypad(true)
@@ -38,7 +39,7 @@ module CursedConsole
       l.slice(top_line..-1).each_with_index do | menu_item, index |
         break if index >= displayable_lines
         setpos(index + 1, 1)
-        attrset((index + top_line) == active_index ? Curses::A_STANDOUT : Curses::A_NORMAL)
+        attrset(((index + top_line) == active_index ? Curses::A_STANDOUT : Curses::A_NORMAL) | Curses::color_pair(1))
         spaces = " " * ((maxx - 2) - menu_item.length)
         addstr(menu_item.to_s + spaces)
       end

@@ -16,6 +16,7 @@ begin
   Curses::crmode
   Curses::nonl
   Curses::start_color
+  Curses::init_pair(1, Curses::COLOR_GREEN, Curses::COLOR_BLACK)
   Curses::stdscr.keypad(true)
   Curses::curs_set(0)
 
