@@ -152,7 +152,7 @@ module CursedConsole
             render_field_value(field)
           end
         else
-          %x{ echo "Character: #{ch}" > log.txt }
+          %x{ echo "Character: #{ch}" >> log.txt }
           # All other characters
           if field.type == :text
             field.update_value(ch)
@@ -219,7 +219,7 @@ module CursedConsole
         uri = format_uri(field_config[:select_list])
         %x{ echo "URI to GET: #{uri}" >> log.txt }
         list = web_service_client.get(uri)
-        list = list.is_a?(Hash) ? [] : list
+        list = list.is_a?(Hash) ? list.keys.map { |k| k.to_s } : list
         %x{ echo "Resource list: #{list.inspect}" >> log.txt }
       else
         list = ResourceAccessor.resource_menu
@@ -242,7 +242,7 @@ module CursedConsole
       else
         selected = [ ]
       end
-      %x{ echo "Selected item: '#{selected.inspect}'" > log.txt }
+      %x{ echo "Selected item: '#{selected.inspect}'" >> log.txt }
       if selected.present?
         if field_config[:select_list].is_a?(Array)
           field.value = selected.first # field_config[:select_list][selected.first].first
