@@ -220,7 +220,15 @@ module CursedConsole
         uri = format_uri(field_config[:select_list])
         %x{ echo "URI to GET: #{uri}" >> log.txt }
         list = web_service_client.get(uri)
-        list = list.is_a?(Hash) ? list.keys.map { |k| k.to_s } : list
+        %x{ echo "Raw results: #{list.inspect}" >> log.txt }
+        if list.is_a?(Hash)
+          if list.has_key?('error')
+            list = []
+          else
+            list = list.keys.map { |k| k.to_s }
+          end
+        end
+        # list = list.is_a?(Hash) ? list.keys.map { |k| k.to_s } : list
         %x{ echo "Resource list: #{list.inspect}" >> log.txt }
       else
         list = ResourceAccessor.resource_menu
