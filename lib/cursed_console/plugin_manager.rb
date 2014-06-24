@@ -13,7 +13,7 @@ module CursedConsole
     end
 
     def actions(sub_path, plugin_name)
-      "Plugins::#{sub_path.capitalize}::#{plugin_name.capitalize}".constantize.instance_methods(false)
+      "Plugins::#{sub_path.capitalize}::#{plugin_name.capitalize}".constantize.instance_methods(false).map { |m| m.to_s }
     end
 
     def instantiate_plugin(sub_path, plugin_name)
