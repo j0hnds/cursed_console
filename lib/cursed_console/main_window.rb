@@ -124,7 +124,7 @@ module CursedConsole
         # No input required. Don't need no stinkin' form
         the_form = plugin.send(action.to_sym)
         uri = the_form[:result]
-        list = plugin.send(the_form[:result_formatter], web_service_client, uri)
+        list = plugin.send(the_form[:result_formatter], web_service_client, uri, {})
         submenu = DropDownMenu.new(list, 
                                   nil, # sub_path
                                   nil, # plugin_manager

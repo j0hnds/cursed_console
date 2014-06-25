@@ -197,7 +197,7 @@ module CursedConsole
     def process_form_result(web_service_client)
       return if the_form[:result].nil?
       uri = format_uri(the_form[:result])
-      list = resource.send(the_form[:result_formatter], web_service_client, uri)
+      list = resource.send(the_form[:result_formatter], web_service_client, uri, fields.inject({}) {|acc,fld| acc[fld.name] = fld.value; acc })
       submenu = DropDownMenu.new(list, 
                                 nil, # sub_path
                                 nil, # plugin_manager
