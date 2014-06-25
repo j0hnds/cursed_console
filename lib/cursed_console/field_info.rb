@@ -4,14 +4,14 @@ module CursedConsole
 
     attr_accessor :name, :type, :line, :start_col, :end_col, :cursor_col, :value
 
-    def initialize(name, type, line=0, start_col=0, end_col=0)
+    def initialize(name, type, line=0, start_col=0, end_col=0, default_value="")
       @name = name
       @type = type
       @line = line
       @start_col = start_col
       @end_col = end_col
       @cursor_col = start_col
-      @value = ""
+      @value = default_value
     end
 
     def is_button?

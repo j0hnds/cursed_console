@@ -58,16 +58,12 @@ module CursedConsole
         setpos(field_y, LABEL_START_COL)
         addstr(field_config[:label])
         field_start_col = LABEL_START_COL + field_config[:label].length + LABEL_FIELD_GAP
+        self.fields << FieldInfo.new(field_name, field_config[:type], field_y, field_start_col, field_start_col + field_config[:width], field_config[:default].present? ? field_config[:default] : "") unless fields_already_populated
         setpos(field_y, field_start_col)
         attron(Curses::A_STANDOUT)
         field = fields.detect { | field | field.name == field_name }
-        if field.nil?
-          addstr(" " * field_config[:width])
-        else
-          addstr(field.padded_value)
-        end
+        addstr(field.padded_value)
         attroff(Curses::A_STANDOUT)
-        self.fields << FieldInfo.new(field_name, field_config[:type], field_y, field_start_col, field_start_col + field_config[:width]) unless fields_already_populated
         field_y += 2
       end
       render_button(:ok)
