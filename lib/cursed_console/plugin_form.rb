@@ -127,8 +127,12 @@ module CursedConsole
           case field.type
             when :button
               return if field.name == :cancel
-              process_form_result(web_service_client)
-              return
+              begin
+                process_form_result(web_service_client)
+                return
+              rescue StandardError => ex
+                write_status_message(ex.message)
+              end
             when :picker
               render_sub_menu(field, web_service_client)
               self.current_field += 1
@@ -179,6 +183,10 @@ module CursedConsole
       replaceables.each do | replaceable |
         %x{ echo "Replaceable: #{replaceable.slice(1..-1).to_sym.inspect}" >> log.txt }
         field = fields.detect { | field | field.name == replaceable.slice(1..-1).to_sym }
+        if the_form[:fields][field.name][:validate].present?
+          regex = the_form[:fields][field.name][:validate]
+          raise "Invalid value for #{field.name}" unless field.value =~ regex
+        end
         value = the_form[:fields][field.name][:base64_encoded] ? Base64.urlsafe_encode64(field.value) : field.value
         raise "Must specify value for #{replaceable}" if value.nil? || value.length == 0
         uri = uri.gsub(replaceable, value)
@@ -188,12 +196,7 @@ module CursedConsole
 
     def process_form_result(web_service_client)
       return if the_form[:result].nil?
-      begin
-        uri = format_uri(the_form[:result])
-      rescue StandardError => ex
-        write_status_message(ex.message)
-        return
-      end
+      uri = format_uri(the_form[:result])
       list = resource.send(the_form[:result_formatter], web_service_client, uri)
       submenu = DropDownMenu.new(list, 
                                 nil, # sub_path
