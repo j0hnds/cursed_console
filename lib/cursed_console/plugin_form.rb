@@ -215,31 +215,28 @@ module CursedConsole
     end
 
     def render_sub_menu(field, web_service_client)
-      %x{ echo "render_sub_menu 1" >> log.txt }
       field_config = the_form[:fields][field.name]
       if field_config[:select_list].is_a?(Array)
+        # This is a hard-coded list of selections in the resource
         list = field_config[:select_list].inject({}) do | acc, tuple |
           acc[tuple.first] = tuple.last
           acc
         end
       elsif field_config[:select_list].is_a?(String)
-        %x{ echo "render_sub_menu 2" >> log.txt }
+        # This is supposed to be a call to a web service
         begin
           uri = format_uri(field_config[:select_list])
-          %x{ echo "render_sub_menu 3: #{uri}" >> log.txt }
         rescue StandardError => ex
-          %x{ echo "render_sub_menu 4" >> log.txt }
           write_status_message(ex.message)
           return []
         end
-        %x{ echo "URI to GET: #{uri}" >> log.txt }
         begin
           list = web_service_client.get(uri)
         rescue Exception => ex
           write_status_message(ex.message)
           return []
         end
-        %x{ echo "Raw results: #{list.inspect}" >> log.txt }
+        CursedConsole::Logger.debug("The list returned from the server: #{list.inspect}")
         if list.is_a?(Hash)
           if list.has_key?('error')
             list = []
