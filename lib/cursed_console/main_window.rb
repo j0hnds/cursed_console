@@ -125,19 +125,26 @@ module CursedConsole
         the_form = plugin.send(action.to_sym)
         uri = the_form[:result]
         list = plugin.send(the_form[:result_formatter], web_service_client, uri, {})
-        submenu = DropDownMenu.new(list, 
-                                  nil, # sub_path
-                                  nil, # plugin_manager
-                                  1,
-                                  1,
-                                  self)  # status_bar
-        selected = submenu.select_menu_item.tap do | selection |
-          submenu.clear
-          submenu.refresh
-          submenu.close
+        data_list = DataList.new(list)
+        #submenu = DropDownMenu.new(list, 
+                                  #nil, # sub_path
+                                  #nil, # plugin_manager
+                                  #1,
+                                  #1,
+                                  #self)  # status_bar
+        selected = data_list.handle_list.tap do | selection |
+          data_list.clear
+          data_list.refresh
+          data_list.close
           Curses::curs_set(1)
-          # render_fields
         end
+        #selected = submenu.select_menu_item.tap do | selection |
+          #submenu.clear
+          #submenu.refresh
+          #submenu.close
+          #Curses::curs_set(1)
+          ## render_fields
+        #end
         refresh
       end
     end
