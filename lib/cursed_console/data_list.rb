@@ -70,10 +70,10 @@ module CursedConsole
     def draw_list(active_index=0, top_line=0)
       item_list.slice(top_line..-1).each_with_index do | item, index |
         break if index >= displayable_lines
-        item_length = item.length > (maxx - 4) ? maxx - 4 : item.length
+        item_length = item.length > (maxx - 3) ? maxx - 3 : item.length
         setpos(index + 1, 1)
         attrset(((index + top_line) == active_index ? Curses::A_STANDOUT : Curses::A_NORMAL) | Curses::color_pair(1))
-        spaces = " " * ((maxx - 4) - item_length)
+        spaces = " " * ((maxx - 3) - item_length)
         clipped_item = item.to_s.slice(0, item_length)
         addstr(clipped_item + spaces)
       end
@@ -81,10 +81,12 @@ module CursedConsole
 
     def calculate_size_position(item_list, max_window_height)
       max_width = item_list.inject(0) { | acc, item | acc = item.length if item.length > acc; acc }
-      width = max_width > (Curses::cols - 2) ? Curses::cols - 2 : max_width
+      CursedConsole::Logger.debug("Max width: #{max_width}, Window width: #{Curses::cols}")
+      width = max_width > (Curses::cols - 2) ? Curses::cols - 2 : max_width + 2
       height = (item_list.length + 2) > max_window_height ? max_window_height : item_list.length + 2
       top = (Curses::lines - height) / 2
       left = (Curses::cols - width) / 2
+      CursedConsole::Logger.debug("Height (#{height}), Width (#{width}), Top (#{top}), Left (#{left})")
       [ height, width, top, left ]
     end
 
