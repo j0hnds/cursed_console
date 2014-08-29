@@ -198,6 +198,7 @@ module CursedConsole
       return if the_form[:result].nil?
       uri = format_uri(the_form[:result])
       list = resource.send(the_form[:result_formatter], web_service_client, uri, fields.inject({}) {|acc,fld| acc[fld.name] = fld.value; acc })
+      # TODO: THis should be a DataList
       submenu = DropDownMenu.new(list, 
                                 nil, # sub_path
                                 nil, # plugin_manager
@@ -249,6 +250,9 @@ module CursedConsole
       else
         list = ResourceAccessor.resource_menu
       end
+      list = CursedConsole::List.new(list, field_config[:display_name])
+      CursedConsole::Logger.debug("The list is a: #{list.class.name}")
+      CursedConsole::Logger.debug("The display is a: #{list.display_lambda.class.name}")
       if list.length > 0
         submenu = DropDownMenu.new(list, 
                                   nil, # sub_path

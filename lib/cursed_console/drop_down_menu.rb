@@ -14,7 +14,7 @@ module CursedConsole
                    status_bar, 
                    max_window_height=MAX_WINDOW_HEIGHT)
       super(item_list.size + 2 > max_window_height ? max_window_height : item_list.size + 2, 
-            (item_list.is_a?(Hash) ? item_list.keys : item_list).inject(0) { |acc, item| acc = item.length if item.length > acc; acc } + 2, 
+            (item_list.is_a?(Hash) ? item_list.keys : item_list).item_width + 2, 
             top, 
             left)
       @item_list = item_list
@@ -36,10 +36,11 @@ module CursedConsole
       else
         l = item_list
       end
-      l.slice(top_line..-1).each_with_index do | menu_item, index |
+      l.slice_display(top_line..-1).each_display_with_index do | menu_item, index |
         break if index >= displayable_lines
         setpos(index + 1, 1)
         attrset(((index + top_line) == active_index ? Curses::A_STANDOUT : Curses::A_NORMAL) | Curses::color_pair(1))
+        CursedConsole::Logger.debug("The item to be drawn: (#{menu_item})")
         spaces = " " * ((maxx - 2) - menu_item.length)
         addstr(menu_item.to_s + spaces)
       end
@@ -115,7 +116,7 @@ module CursedConsole
 
     def render_sub_menu(position)
       plugin_name = item_list[position]
-      submenu = DropDownMenu.new(plugin_manager.actions(sub_path, plugin_name),
+      submenu = DropDownMenu.new(CursedConsole::List.new(plugin_manager.actions(sub_path, plugin_name)),
                                  nil, # No subpath
                                  plugin_manager,
                                  begy + position, 
