@@ -58,7 +58,11 @@ module CursedConsole
         setpos(field_y, LABEL_START_COL)
         addstr(field_config[:label])
         field_start_col = LABEL_START_COL + field_config[:label].length + LABEL_FIELD_GAP
-        self.fields << FieldInfo.new(field_name, field_config[:type], field_y, field_start_col, field_start_col + field_config[:width], field_config[:default].present? ? field_config[:default] : "") unless fields_already_populated
+        unless fields_already_populated
+          field_info = FieldInfo.new(field_name, field_config[:type], field_y, field_start_col, field_start_col + field_config[:width], field_config[:default].present? ? field_config[:default] : "")
+          field_info.display_name = field_config[:display_name]
+          self.fields << field_info
+        end
         setpos(field_y, field_start_col)
         attron(Curses::A_STANDOUT)
         field = fields.detect { | field | field.name == field_name }
@@ -250,7 +254,7 @@ module CursedConsole
       else
         list = ResourceAccessor.resource_menu
       end
-      list = CursedConsole::List.new(list, field_config[:display_name])
+      list.display_lambda = field_config[:display_name] # CursedConsole::List.new(list, field_config[:display_name])
       CursedConsole::Logger.debug("The list is a: #{list.class.name}")
       CursedConsole::Logger.debug("The display is a: #{list.display_lambda.class.name}")
       if list.length > 0
@@ -271,7 +275,7 @@ module CursedConsole
       else
         selected = [ ]
       end
-      %x{ echo "Selected item: '#{selected.inspect}'" >> log.txt }
+      CursedConsole::Logger.debug("Selected item: '#{selected.inspect}'")
       if selected.present?
         if field_config[:select_list].is_a?(Array)
           field.value = selected.first # field_config[:select_list][selected.first].first

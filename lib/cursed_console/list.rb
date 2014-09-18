@@ -1,14 +1,8 @@
 module CursedConsole
 
-  class List < Array
+  module List 
 
-    attr_reader :display_lambda
-
-    def initialize(ary, display_lambda=nil)
-      super(ary)
-
-      @display_lambda = display_lambda
-    end
+    attr_accessor :display_lambda
 
     def each_display
       each do | item |
@@ -16,8 +10,14 @@ module CursedConsole
       end
     end
 
+    def detect_display
+      detect do | item |
+        yield display_lambda.nil? ? item : display_lambda.call(item)
+      end
+    end
+
     def slice_display(range)
-      CursedConsole::List.new(slice(range), display_lambda)
+      slice(range).tap { | a | a.display_lambda = display_lambda }
     end
 
     def item_width
@@ -39,4 +39,11 @@ module CursedConsole
 
   end
 
+end
+
+#
+# Extend array with this beautiful stuff
+#
+class Array
+  include CursedConsole::List;
 end

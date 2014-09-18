@@ -2,7 +2,7 @@ module CursedConsole
 
   class FieldInfo
 
-    attr_accessor :name, :type, :line, :start_col, :end_col, :cursor_col, :value
+    attr_accessor :name, :type, :line, :start_col, :end_col, :cursor_col, :value, :display_name
 
     def initialize(name, type, line=0, start_col=0, end_col=0, default_value="")
       @name = name
@@ -55,8 +55,10 @@ module CursedConsole
 
     def padded_value
       width = end_col - start_col
-      pad_count = width - value.length
-      "#{value}#{' ' * pad_count}"
+      v_to_display = (value.nil? || (value.is_a?(String) && value.length == 0))  ? "" : display_name ? display_name.call(value) : value
+      pad_count = width - v_to_display.length
+      "#{v_to_display}#{' ' * pad_count}"
+      # "#{value}#{' ' * pad_count}"
     end
   end
 
