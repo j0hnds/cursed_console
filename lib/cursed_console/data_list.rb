@@ -7,7 +7,8 @@ module CursedConsole
   class DataList < Curses::Window
 
     PAD_HEIGHT = 3
-
+    HIGHLIGHT = Curses::A_STANDOUT | Curses::color_pair(1)
+    NORMAL = Curses::A_NORMAL | Curses::color_pair(1)
     attr_reader :item_list
 
     #
@@ -46,9 +47,10 @@ module CursedConsole
           return position
         else
           next if ch.is_a?(Fixnum)
-          #
           # Using a key to select a row
-          selected_item = item_list.detect { |item| item.downcase.start_with?(ch.downcase) }
+          selected_item = item_list.detect do |item| 
+            item.downcase.start_with?(ch.downcase)
+          end
           position = item_list.index(selected_item) unless selected_item.nil?
         end
 
@@ -65,28 +67,46 @@ module CursedConsole
 
     private
 
-    def displayable_lines; maxy - 2 end
+    def displayable_lines
+      maxy - 2 
+    end
 
     def draw_list(active_index=0, top_line=0)
-      item_list.slice(top_line..-1).each_with_index do | item, index |
+      item_list.
+        slice(top_line..-1).
+        each_with_index do | item, index |
+
         break if index >= displayable_lines
+
         item_length = item.length > (maxx - 3) ? maxx - 3 : item.length
         setpos(index + 1, 1)
-        attrset(((index + top_line) == active_index ? Curses::A_STANDOUT : Curses::A_NORMAL) | Curses::color_pair(1))
+
+        # Highlight the active item in the list, normal for all the
+        # rest
+        attrset((index + top_line) == active_index ? HIGHLIGHT : NORMAL)
+
         spaces = " " * ((maxx - 3) - item_length)
+
         clipped_item = item.to_s.slice(0, item_length)
+
         addstr(clipped_item + spaces)
       end
     end
 
     def calculate_size_position(item_list, max_window_height)
-      max_width = item_list.inject(0) { | acc, item | acc = item.length if item.length > acc; acc }
-      CursedConsole::Logger.debug("Max width: #{max_width}, Window width: #{Curses::cols}")
+      max_width = item_list.inject(0) do | acc, item | 
+        acc = item.length if item.length > acc
+        acc 
+      end
+
       width = max_width > (Curses::cols - 2) ? Curses::cols - 2 : max_width + 2
+
       height = (item_list.length + 2) > max_window_height ? max_window_height : item_list.length + 2
+
       top = (Curses::lines - height) / 2
+
       left = (Curses::cols - width) / 2
-      CursedConsole::Logger.debug("Height (#{height}), Width (#{width}), Top (#{top}), Left (#{left})")
+
       [ height, width, top, left ]
     end
 
