@@ -12,7 +12,7 @@ module CursedConsole
       @current_position = -1
       @plugin_manager = plugin_manager
       @web_service_client = web_service_client
-      @menu_list = @plugin_manager.sub_paths
+      @menu_list = @plugin_manager.plugins
       Curses::curs_set(0)
       color_set(1)
       keypad(true)
@@ -32,7 +32,7 @@ module CursedConsole
           submenu_select = render_sub_menu(current_position)
           if submenu_select.present?
             # This is where we should invoke the form
-            invoke_action(plugin_manager.sub_paths[current_position], 
+            invoke_action(plugin_manager.plugins[current_position], 
                           submenu_select.first, 
                           submenu_select.last)
             # return [ current_position ] + submenu_select
@@ -88,7 +88,7 @@ module CursedConsole
 
     def position_for_submenu(selected_menu_item)
       pos = 2
-      plugin_manager.sub_paths.each_with_index do | item, index |
+      plugin_manager.plugins.each_with_index do | item, index |
         break if selected_menu_item >= index
         pos += (item.length + 1)
       end
@@ -96,8 +96,8 @@ module CursedConsole
     end
 
     def render_sub_menu(position)
-      sub_path = plugin_manager.sub_paths[position]
-      plugins = plugin_manager.plugins_for(sub_path)
+      sub_path = plugin_manager.plugins[position]
+      plugins = plugin_manager.resources_for(sub_path)
       submenu = DropDownMenu.new(plugins,
                                  sub_path,
                                  plugin_manager,
@@ -113,7 +113,7 @@ module CursedConsole
 
     def invoke_action(sub_path, plugin, action)
       # Instantiate the plugin...
-      plugin = plugin_manager.instantiate_plugin(sub_path, plugin)
+      plugin = plugin_manager.instantiate_resource(sub_path, plugin)
       if plugin.requires_input_for?(action.to_sym)
         form = PluginForm.new(plugin, action.to_sym, self, 20, 80, 2, 2)
         form.handle_form(web_service_client)

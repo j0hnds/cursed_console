@@ -116,7 +116,7 @@ module CursedConsole
 
     def render_sub_menu(position)
       plugin_name = item_list[position]
-      submenu = DropDownMenu.new(plugin_manager.actions(sub_path, plugin_name),
+      submenu = DropDownMenu.new(plugin_manager.actions_for(sub_path, plugin_name),
                                  nil, # No subpath
                                  plugin_manager,
                                  begy + position, 

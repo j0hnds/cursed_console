@@ -8,7 +8,7 @@ plugin_manager = CursedConsole::PluginManager.new(options[:plugin_path])
 web_service_client = CursedConsole::WebServiceClient.new(options[:server],
                                                          options[:use_ssl],
                                                          options[:api_token])
-plugin_manager.load_plugins
+plugin_manager.load_resources
 
 begin
   Curses::noecho
