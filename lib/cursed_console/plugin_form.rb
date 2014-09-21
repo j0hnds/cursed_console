@@ -207,8 +207,7 @@ module CursedConsole
                                 nil, # sub_path
                                 nil, # plugin_manager
                                 1,
-                                1,
-                                nil)
+                                1)
       selected = submenu.select_menu_item.tap do | selection |
         submenu.clear
         submenu.refresh
@@ -254,7 +253,13 @@ module CursedConsole
       else
         list = ResourceAccessor.resource_menu
       end
-      list.display_lambda = field_config[:display_name] # CursedConsole::List.new(list, field_config[:display_name])
+      # list.display_lambda = field_config[:display_name] 
+      display_lambda = field_config[:display_name]
+      if display_lambda
+        list.each do | item |
+          item[:display] = display_lambda.call(item)
+        end
+      end
       CursedConsole::Logger.debug("The list is a: #{list.class.name}")
       CursedConsole::Logger.debug("The display is a: #{list.display_lambda.class.name}")
       if list.length > 0
@@ -262,8 +267,7 @@ module CursedConsole
                                   nil, # sub_path
                                   nil, # plugin_manager
                                   field.line + 3, 
-                                  field.start_col + 1, 
-                                  nil)
+                                  field.start_col + 1)
         selected = submenu.select_menu_item.tap do | selection |
           submenu.clear
           submenu.refresh

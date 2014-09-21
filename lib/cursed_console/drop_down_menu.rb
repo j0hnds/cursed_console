@@ -1,55 +1,62 @@
 module CursedConsole
 
+  #
+  # This class assumes that it is passed a list of hashes. No
+  # exceptions. The hash will be composed of:
+  #
+  # { id: key_selector, display: display_value }
+  #
+  # Any other keys are fine; they will just be ignored.
+  #
   class DropDownMenu < Curses::Window
 
     MAX_WINDOW_HEIGHT = 20
+    HIGHLIGHT = Curses::A_STANDOUT | Curses::color_pair(1)
+    NORMAL = Curses::A_NORMAL | Curses::color_pair(1)
 
-    attr_reader :item_list, :sub_path, :plugin_manager, :max_window_height, :status_bar
+    attr_reader :item_list, :next_level, :plugin_manager
+    attr_reader :max_window_height
 
     def initialize(item_list, 
-                   sub_path, 
+                   next_level, 
                    plugin_manager, 
                    top, 
                    left, 
-                   status_bar, 
                    max_window_height=MAX_WINDOW_HEIGHT)
-      super(item_list.size + 2 > max_window_height ? max_window_height : item_list.size + 2, 
-            (item_list.is_a?(Hash) ? item_list.keys : item_list).item_width + 2, 
-            top, 
-            left)
+      super *calculate_size_position(item_list, max_window_height, top, left)
+
       @item_list = item_list
-      @sub_path = sub_path
+      @next_level = next_level
       @plugin_manager = plugin_manager
       @max_window_height = max_window_height
-      @status_bar = status_bar
 
       color_set(1)
       box('|', '-')
       Curses::curs_set(0)
       keypad(true)
+
       draw_menu(0)
     end
 
     def draw_menu(active_index=nil, top_line=0)
-      if item_list.is_a?(Hash)
-        l = item_list.keys
-      else
-        l = item_list
-      end
-      l.slice_display(top_line..-1).each_display_with_index do | menu_item, index |
+      item_list[top_line..-1].each_with_index do | item, index |
+        menu_item = item[:display]
+
         break if index >= displayable_lines
+
         setpos(index + 1, 1)
-        attrset(((index + top_line) == active_index ? Curses::A_STANDOUT : Curses::A_NORMAL) | Curses::color_pair(1))
-        CursedConsole::Logger.debug("The item to be drawn: (#{menu_item})")
+        attrset((index + top_line) == active_index ? HIGHLIGHT : NORMAL)
         spaces = " " * ((maxx - 2) - menu_item.length)
         addstr(menu_item.to_s + spaces)
       end
     end
 
-    def displayable_lines; maxy - 2 end
+    def displayable_lines
+      maxy - 2 
+    end
 
     def has_sub_items?
-      sub_path.present?
+      next_level.present?
     end
 
     def select_menu_item
@@ -66,32 +73,23 @@ module CursedConsole
           position += 1
         when 13, Curses::Key::ENTER
           if ! has_sub_items?
-            if item_list.is_a?(Hash)
-              return [ item_list.keys[position] ]
-            else
-              return [ item_list[position] ]
-            end
+            return item_list[position][:id]
+            # return [ item_list[position] ]
           else
             submenu_select = render_sub_menu(position)
             if submenu_select.present?
-              if item_list.is_a?(Hash)
-                return [ item_list.keys[position] ] + submenu_select
-              else
-                return [ item_list[position] ] + submenu_select
-              end
+              return [ item_list[position][:id], submenu_select ]
+              # return [ item_list[position] ] + submenu_select
             end
           end
         when 27, Curses::Key::CANCEL
           return [  ]
         else
           next if ch.is_a?(Fixnum)
-          if item_list.is_a?(Hash)
-            l = item_list.keys
-          else
-            l = item_list
+          selected_item = item_list.detect do |item| 
+            item[:display].downcase.start_with?(ch.downcase) 
           end
-          selected_item = l.detect_display { |item| item.downcase.start_with?(ch.downcase) }
-          position = l.index(selected_item) unless selected_item.nil?
+          position = item_list.index(selected_item) unless selected_item.nil?
         end
 
         # Make sure the position stays in range
@@ -102,31 +100,37 @@ module CursedConsole
         top_line = 0 if (position + 1) < displayable_lines
         top_line = (position + 1) - displayable_lines if (position + 1) >= displayable_lines
         draw_menu(position, top_line)
-        update_status_bar(position)
       end
     end
 
     private
 
-    def update_status_bar(current_position)
-      #return if status_bar.nil?
-      #status_bar.write_status_message(item_list[item_list.keys[current_position]]) 
-      #status_bar.refresh
-    end
-
     def render_sub_menu(position)
-      plugin_name = item_list[position]
-      submenu = DropDownMenu.new(plugin_manager.actions_for(sub_path, plugin_name),
+      plugin_name = item_list[position][:id]
+      action_menu = plugin_manager.actions_for(next_level, plugin_name).map do |action|
+        { id: action, display: action.capitalize }
+      end
+      submenu = DropDownMenu.new(action_menu,
                                  nil, # No subpath
                                  plugin_manager,
                                  begy + position, 
-                                 begx + maxx, 
-                                 status_bar)
+                                 begx + maxx)
       submenu.select_menu_item.tap do | selection |
         submenu.clear
         submenu.refresh
         submenu.close
       end
+    end
+
+    def calculate_size_position(item_list, max_window_height, top, left)
+      height = item_list.size + 2 > max_window_height ? max_window_height : item_list.size + 2
+
+      width = item_list.inject(0) do |acc, item|
+        acc = item[:display].size if item[:display].size > acc
+        acc
+      end + 2
+
+      [ height, width, top, left ]
     end
 
   end

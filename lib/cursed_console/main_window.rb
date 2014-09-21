@@ -98,12 +98,14 @@ module CursedConsole
     def render_sub_menu(position)
       sub_path = plugin_manager.plugins[position]
       plugins = plugin_manager.resources_for(sub_path)
-      submenu = DropDownMenu.new(plugins,
+      plugin_menu = plugins.map do | plugin |
+        { id: plugin, display: plugin.capitalize }
+      end
+      submenu = DropDownMenu.new(plugin_menu,
                                  sub_path,
                                  plugin_manager,
                                  1, 
-                                 position_for_submenu(position), 
-                                 self)
+                                 position_for_submenu(position))
       submenu.select_menu_item.tap do | selection |
         submenu.clear
         submenu.refresh
