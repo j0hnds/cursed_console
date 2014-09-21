@@ -260,8 +260,6 @@ module CursedConsole
           item[:display] = display_lambda.call(item)
         end
       end
-      CursedConsole::Logger.debug("The list is a: #{list.class.name}")
-      CursedConsole::Logger.debug("The display is a: #{list.display_lambda.class.name}")
       if list.length > 0
         submenu = DropDownMenu.new(list, 
                                   nil, # sub_path
