@@ -82,7 +82,7 @@ module CursedConsole
       plugin = menu_list[position]
       resources = plugin_manager.resources_for(plugin)
       resource_menu = resources.map do | resource |
-        { id: resource, display: resource.capitalize }
+        { 'id' => resource, 'display' => resource.capitalize }
       end
       submenu = DropDownMenu.new(resource_menu,
                                  plugin,

@@ -1,25 +1,32 @@
 module CursedConsole
 
+  #
+  # This class creates and manages a user data-entry form.
+  #
   class PluginForm < Curses::Window
 
-    attr_accessor :resource, :action, :current_field, :the_form, :fields, :status_bar
+    attr_accessor :resource, :action, :current_field
+    attr_accessor :the_form, :fields, :status_bar
 
-    FIELD_START_Y = 3
+    FIELD_START_Y = 2
     LABEL_START_COL = 2
     LABEL_FIELD_GAP = 1
     BUTTON_WIDTH = 10
 
     def initialize(resource, action, status_bar, height, width, top, left)
       super(height, width, top, left)
+
       @fields = []
       @current_field = 0
       @resource = resource
       @action = action
       @the_form = @resource.send(action)
       @status_bar = status_bar
+
       color_set(1)
       box('|', '-')
       keypad(true)
+
       render_form
       set_cursor_on_current_field
     end
@@ -45,10 +52,8 @@ module CursedConsole
 
     def render_title
       col = (maxx - the_form[:title].length) / 2
-      setpos(1, col)
-      attron(Curses::A_STANDOUT)
+      setpos(0, col)
       addstr(the_form[:title])
-      attroff(Curses::A_STANDOUT)
     end
 
     def render_fields
@@ -135,7 +140,7 @@ module CursedConsole
                 process_form_result(web_service_client)
                 return
               rescue StandardError => ex
-                write_status_message(ex.message)
+                Logger.error(ex.message)
               end
             when :picker
               render_sub_menu(field, web_service_client)
@@ -152,13 +157,17 @@ module CursedConsole
           set_cursor_on_current_field
         when 27, Curses::Key::CANCEL
           return :cancelled
-        when 127 # backspace
+        when 330 # delete key
+          if field.type == :text
+            field.remove_char
+            render_field_value(field)
+          end
+        when 127, 263 # backspace
           if field.type == :text
             field.remove_char(true)
             render_field_value(field)
           end
         else
-          %x{ echo "Character: #{ch}" >> log.txt }
           # All other characters
           if field.type == :text
             field.update_value(ch)
@@ -185,7 +194,6 @@ module CursedConsole
       return select_list if replaceables.empty?
       uri = select_list
       replaceables.each do | replaceable |
-        %x{ echo "Replaceable: #{replaceable.slice(1..-1).to_sym.inspect}" >> log.txt }
         field = fields.detect { | field | field.name == replaceable.slice(1..-1).to_sym }
         if the_form[:fields][field.name][:validate].present?
           regex = the_form[:fields][field.name][:validate]
@@ -218,51 +226,53 @@ module CursedConsole
       refresh
     end
 
-    def render_sub_menu(field, web_service_client)
-      field_config = the_form[:fields][field.name]
-      if field_config[:select_list].is_a?(Array)
-        # This is a hard-coded list of selections in the resource
-        list = field_config[:select_list].inject({}) do | acc, tuple |
-          acc[tuple.first] = tuple.last
-          acc
-        end
-      elsif field_config[:select_list].is_a?(String)
-        # This is supposed to be a call to a web service
-        begin
-          uri = format_uri(field_config[:select_list])
-        rescue StandardError => ex
-          write_status_message(ex.message)
-          return []
-        end
-        begin
-          list = web_service_client.get(uri)
-        rescue Exception => ex
-          write_status_message(ex.message)
-          return []
-        end
-        CursedConsole::Logger.debug("The list returned from the server: #{list.inspect}")
-        if list.is_a?(Hash)
-          if list.has_key?('error')
-            list = []
-          else
-            list = list.keys.map { |k| k.to_s }
-          end
-        end
-        # list = list.is_a?(Hash) ? list.keys.map { |k| k.to_s } : list
-        %x{ echo "Resource list: #{list.inspect}" >> log.txt }
-      else
-        list = ResourceAccessor.resource_menu
+    def get_hard_coded_item_list(field_config)
+      # This is a hard-coded list of selections in the resource
+      field_config[:select_list].map do | tuple |
+        { 'id' => tuple.first, 'display' => tuple.last }
       end
-      # list.display_lambda = field_config[:display_name] 
+    end
+
+    def get_server_item_list(field_config, web_service_client)
+      # This is supposed to be a call to a web service
+      begin
+        uri = format_uri(field_config[:select_list])
+      rescue StandardError => ex
+        Logger.error(ex.message)
+        return []
+      end
+      begin
+        list = web_service_client.get(uri)
+      rescue Exception => ex
+        Logger.error(ex.message)
+        return []
+      end
+      Logger.debug("The list returned from the server: #{list.inspect}")
       display_lambda = field_config[:display_name]
       if display_lambda
         list.each do | item |
-          item[:display] = display_lambda.call(item)
+          item['display'] = display_lambda.call(item)
         end
       end
+      list
+    end
+
+    def get_item_list(field_config, web_service_client)
+      if field_config[:select_list].is_a?(Array)
+        get_hard_coded_item_list(field_config)
+      elsif field_config[:select_list].is_a?(String)
+        get_server_item_list(field_config, web_service_client)
+      else
+        list = ResourceAccessor.resource_menu
+      end
+    end
+
+    def render_sub_menu(field, web_service_client)
+      field_config = the_form[:fields][field.name]
+      list = get_item_list(field_config, web_service_client)
       if list.length > 0
         submenu = DropDownMenu.new(list, 
-                                  nil, # sub_path
+                                  nil, # next_level
                                   nil, # plugin_manager
                                   field.line + 3, 
                                   field.start_col + 1)
@@ -277,35 +287,19 @@ module CursedConsole
       else
         selected = [ ]
       end
-      CursedConsole::Logger.debug("Selected item: '#{selected.inspect}'")
+      Logger.debug("Selected item: '#{selected.inspect}'")
       if selected.present?
-        if field_config[:select_list].is_a?(Array)
-          field.value = selected.first # field_config[:select_list][selected.first].first
-        elsif field_config[:select_list].is_a?(String)
-          field.value = selected.first # list[selected.first]
-        else
-          field.value = selected.inspect
-        end
+        field.value = list.detect { | item | item['id'] == selected }
         render_field_value(field)
+        if field_config[:populate_form].present?
+          field_config[:populate_form].each do | field_name |
+            f = fields.detect { |fld| fld.name == field_name.to_sym }
+            f.value = field.value[field_name] # if f.present?
+          end
+          render_fields
+        end
       end
     end
-
-    def write_status_message(message=nil, offset=0)
-      # %x{ echo "Line: #{lines - 1}, Message: #{message}" >> log.txt}
-      # Clear the status line
-      setpos(maxy - 4, 1)
-      attron(Curses::A_STANDOUT)
-      addstr(" " * (maxx - 2))
-      attroff(Curses::A_STANDOUT)
-
-      if ! message.nil?
-        setpos(maxy - 4, 2)
-        attron(Curses::A_STANDOUT)
-        addstr(message)
-        attroff(Curses::A_STANDOUT)
-      end
-    end
-
 
   end
 
