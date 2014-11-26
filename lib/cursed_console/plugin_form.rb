@@ -200,8 +200,11 @@ module CursedConsole
           raise "Invalid value for #{field.name}" unless field.value =~ regex
         end
         value = the_form[:fields][field.name][:base64_encoded] ? Base64.urlsafe_encode64(field.value) : field.value
-        raise "Must specify value for #{replaceable}" if value.nil? || value.length == 0
-        uri = uri.gsub(replaceable, value)
+        if value.is_a?(Hash)
+          value = value['id']
+        end
+        raise "Must specify value for #{replaceable}" if value.blank?
+        uri = uri.gsub(replaceable, value.to_s)
       end
       uri
     end
